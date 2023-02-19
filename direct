@@ -1,0 +1,181 @@
+Ось приклад коду, який реалізує глобальну точку доступу до бази даних з використанням паттерна Singleton у мові програмування Python:
+
+class Database:
+    __instance = None
+
+    @staticmethod 
+    def getInstance():
+        """Статичний метод, який повертає єдиний екземпляр бази даних"""
+
+        # Якщо єдиний екземпляр не існує, то створюємо його
+        if Database.__instance == None:
+            Database()
+
+        # Повертаємо єдиний екземпляр
+        return Database.__instance
+
+    def __init__(self):
+        """Конструктор класу Database"""
+
+        # Перевірка на існування єдиного екземпляру
+        if Database.__instance != None:
+            raise Exception("Цей клас є Singleton, не можна створювати більше одного екземпляру!")
+        else:
+            Database.__instance = self
+
+        # Підключення до бази даних
+        self.__connection = pymysql.connect(
+            host='localhost',
+            user='username',
+            password='password',
+            db='database_name',
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor
+        )
+
+    def getConnection(self):
+        """Метод, який повертає з'єднання до бази даних"""
+
+        return self.__connection
+Цей код містить клас Database, який є Singleton-ом, тобто його конструктор можна викликати лише один раз, і він створює єдиний екземпляр класу. 
+Статичний метод getInstance() повертає єдиний екземпляр класу, а метод getConnection() повертає з'єднання до бази даних.
+
+Зверніть увагу, що в конструкторі класу перевіряється наявність єдиного екземпляру, і якщо він вже існує, то генерується виключення.
+Це забезпечує те, що можна створювати лише один екземпляр класу.
+
+
+Так, звичайно. Якщо ви хочете розширити функціональність бази даних, ви можете додати нові методи до класу Database.
+Наприклад, якщо ви хочете додати можливість виконання запитів до бази даних, ви можете додати новий метод executeQuery() до класу Database:
+
+class Database:
+    # Код класу Singleton Database
+    
+    def executeQuery(self, query, params=None):
+        """Метод, який виконує запит до бази даних"""
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, params)
+            result = cursor.fetchall()
+
+        return result
+        
+У цьому методі використовується з'єднання __connection, яке було створене в конструкторі класу. 
+Метод отримує параметри query і params, де query - це запит до бази даних, а params - це параметри запиту, якщо вони є. 
+Метод виконує запит до бази даних, використовуючи об'єкт cursor, і повертає результат запиту у вигляді списку словників, 
+де кожен словник представляє один рядок результатів.
+
+Також можна додати методи для вставки, оновлення або видалення даних з бази даних. Наприклад:
+
+
+class Database:
+    # Код класу Singleton Database
+    
+    def executeInsert(self, table, data):
+        """Метод, який додає новий рядок до таблиці"""
+
+        columns = ', '.join(data.keys())
+        values_template = ', '.join(['%s']*len(data))
+        query = f"INSERT INTO {table} ({columns}) VALUES ({values_template})"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, tuple(data.values()))
+            self.__connection.commit()
+            result = cursor.lastrowid
+
+        return result
+
+    def executeUpdate(self, table, data, condition=None):
+        """Метод, який оновлює рядки таблиці"""
+
+        set_clause = ', '.join([f"{k}=%s" for k in data.keys()])
+        query = f"UPDATE {table} SET {set_clause}"
+
+        if condition is not None:
+            query += f" WHERE {condition}"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, tuple(data.values()))
+            self.__connection.commit()
+            result = cursor.rowcount
+
+        return result
+
+    def executeDelete(self, table, condition):
+        """Метод, який видаляє рядки з таблиці"""
+
+        query = f"DELETE FROM {table} WHERE {condition}"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query)
+            self.__connection.commit()
+            result = cursor.rowcount
+
+        return result
+Ці методи приймають назву таблиці т
+
+
+Продовжимо. Так як ми використовуємо паттерн Singleton, ми можемо забезпечити, що з'єднання з базою даних буде використовуватись тільки в одному місці програми. 
+Однак, якщо ми хочемо підключитись до різних баз даних, ми можемо додати параметр database до конструктора класу Database, який буде вказувати назву бази даних,
+з якою ми хочемо підключитись. Ось приклад:
+
+import pymysql
+
+class Database:
+    __instance = None
+
+    def __init__(self, database):
+        if self.__instance is not None:
+            raise Exception("Cannot create multiple instances of Singleton class")
+
+        self.__connection = pymysql.connect(
+            host="localhost",
+            user="root",
+            password="password",
+            database=database
+        )
+
+    @staticmethod
+    def getInstance(database):
+        if Database.__instance is None:
+            Database.__instance = Database(database)
+
+        return Database.__instance
+
+    def executeQuery(self, query, params=None):
+        # Код методу executeQuery()
+
+    def executeInsert(self, table, data):
+        # Код методу executeInsert()
+
+    def executeUpdate(self, table, data, condition=None):
+        # Код методу executeUpdate()
+
+    def executeDelete(self, table, condition):
+        # Код методу executeDelete()
+У цьому випадку, при створенні об'єкту Database, ми передаємо назву бази даних у параметрі database. 
+Це дозволяє нам використовувати клас Database для підключення до різних баз даних у нашій програмі.
+
+Також, якщо ми хочемо змінити параметри підключення до бази даних в нашій програмі, ми можемо додати метод reconnect(), 
+який буде перепідключатись до бази даних з новими параметрами. Ось приклад:
+
+python
+Copy code
+class Database:
+    # Код класу Singleton Database
+    
+    def reconnect(self, host, user, password, database=None):
+        """Метод, який перепідключається до бази даних з новими параметрами"""
+
+        if database is None:
+            database = self.__connection.database
+
+        self.__connection.close()
+
+        self.__connection = pymysql.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+Цей метод приймає параметри host, user, password та опціональний параметр database.
+Він закриває поточне з'єднання з базою даних, створює нове з'єднання з переданими параметрами та замі
