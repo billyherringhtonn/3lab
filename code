@@ -1,0 +1,98 @@
+class Database:
+    __instance = None
+
+    @staticmethod 
+    def getInstance():
+        """Статичний метод, який повертає єдиний екземпляр бази даних"""
+
+        # Якщо єдиний екземпляр не існує, то створюємо його
+        if Database.__instance == None:
+            Database()
+
+        # Повертаємо єдиний екземпляр
+        return Database.__instance
+
+    def __init__(self):
+        """Конструктор класу Database"""
+
+        # Перевірка на існування єдиного екземпляру
+        if Database.__instance != None:
+            raise Exception("Цей клас є Singleton, не можна створювати більше одного екземпляру!")
+        else:
+            Database.__instance = self
+
+        # Підключення до бази даних
+        self.__connection = pymysql.connect(
+            host='localhost',
+            user='username',
+            password='password',
+            db='database_name',
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor
+        )
+
+    def getConnection(self):
+        """Метод, який повертає з'єднання до бази даних"""
+
+        return self.__connection
+        
+        
+        
+        
+        class Database:
+    # Код класу Singleton Database
+    
+    def executeQuery(self, query, params=None):
+        """Метод, який виконує запит до бази даних"""
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, params)
+            result = cursor.fetchall()
+
+        return result
+        
+        
+        class Database:
+    # Код класу Singleton Database
+    
+    def executeInsert(self, table, data):
+        """Метод, який додає новий рядок до таблиці"""
+
+        columns = ', '.join(data.keys())
+        values_template = ', '.join(['%s']*len(data))
+        query = f"INSERT INTO {table} ({columns}) VALUES ({values_template})"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, tuple(data.values()))
+            self.__connection.commit()
+            result = cursor.lastrowid
+
+        return result
+
+    def executeUpdate(self, table, data, condition=None):
+        """Метод, який оновлює рядки таблиці"""
+
+        set_clause = ', '.join([f"{k}=%s" for k in data.keys()])
+        query = f"UPDATE {table} SET {set_clause}"
+
+        if condition is not None:
+            query += f" WHERE {condition}"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query, tuple(data.values()))
+            self.__connection.commit()
+            result = cursor.rowcount
+
+        return result
+
+    def executeDelete(self, table, condition):
+        """Метод, який видаляє рядки з таблиці"""
+
+        query = f"DELETE FROM {table} WHERE {condition}"
+
+        with self.__connection.cursor() as cursor:
+            cursor.execute(query)
+            self.__connection.commit()
+            result = cursor.rowcount
+
+        return result
